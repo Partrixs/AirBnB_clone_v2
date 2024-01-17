@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """ new class for sqlAlchemy """
 from os import getenv
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, relationship, scoped_session
 from sqlalchemy import (create_engine)
 from sqlalchemy.ext.declarative import declarative_base
 from models.base_model import Base
@@ -19,40 +19,37 @@ class DBStorage:
     __session = None
 
     def __init__(self):
-        user = getenv("HBNB_MYSQL_USER")
-        passwd = getenv("HBNB_MYSQL_PWD")
-        db = getenv("HBNB_MYSQL_DB")
-        host = getenv("HBNB_MYSQL_HOST")
-        env = getenv("HBNB_ENV")
-
+        """Creates the engine"""
         self.__engine = create_engine('mysql+mysqldb://{}:{}@{}/{}'
-                                      .format(user, passwd, host, db),
+                                      .format(getenv('HBNB_MYSQL_USER'),
+                                              getenv('HBNB_MYSQL_PWD'),
+                                              getenv('HBNB_MYSQL_HOST'),
+                                              getenv('HBNB_MYSQL_DB')),
                                       pool_pre_ping=True)
-
-        if env == "test":
-            Base.metadata.drop_all(self.__engine)
+        if getenv('HBNB_ENV') == 'test':
+            Base.metadata.drop_all(bind=self.__engine)
 
     def all(self, cls=None):
-        """returns a dictionary
-        Return:
-            returns a dictionary of __object
-        """
-        dic = {}
-        if cls:
-            if type(cls) is str:
-                cls = eval(cls)
-            query = self.__session.query(cls)
-            for elem in query:
-                key = "{}.{}".format(type(elem).__name__, elem.id)
-                dic[key] = elem
+        """Method that queries on the currect database session"""
+        objects_dictionary = {}
+
+        if cls is None:
+            objects_list = self.__session.query(State).all()
+            objects_list.extend(self.__session.query(City).all())
+            objects_list.extend(self.__session.query(User).all())
+            objects_list.extend(self.__session.query(Place).all())
+            objects_list.extend(self.__session.query(Review).all())
+            objects_list.extend(self.__session.query(Amenity).all())
         else:
-            lista = [State, City, User, Place, Review, Amenity]
-            for clase in lista:
-                query = self.__session.query(clase)
-                for elem in query:
-                    key = "{}.{}".format(type(elem).__name__, elem.id)
-                    dic[key] = elem
-        return (dic)
+            if type(cls) == str:
+                cls = eval(cls)
+            objects_list = self.__session.query(cls).all()
+
+        for obj in objects_list:
+            key = "{}.{}".format(type(obj).__name__, obj.id)
+            objects_dictionary[key] = obj
+
+        return objects_dictionary
 
     def new(self, obj):
         """add a new element in the table
