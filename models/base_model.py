@@ -53,23 +53,22 @@ class BaseModel:
         models.storage.save()
 
     def to_dict(self):
-        """creates dictionary of the class  and returns
-        Return:
-            returns a dictionary of all the key values in __dict__
+        """Return a dictionary representation of the BaseModel instance.
+        Includes the key/value pair __class__ representing
+        the class name of the object.
         """
-        my_dict = dict(self.__dict__)
+        my_dict = self.__dict__.copy()
         my_dict["__class__"] = str(type(self).__name__)
         my_dict["created_at"] = self.created_at.isoformat()
         my_dict["updated_at"] = self.updated_at.isoformat()
-        if '_sa_instance_state' in my_dict.keys():
-            del my_dict['_sa_instance_state']
+        my_dict.pop("_sa_instance_state", None)
         return my_dict
 
     def __str__(self):
         """Return the print/str representation of the BaseModel instance."""
         d = self.__dict__.copy()
         d.pop("_sa_instance_state", None)
-        return "[{}] ({}) {}".format(type(self).__name__, self.id, self.__dict__)
+        return "[{}] ({}) {}".format(type(self).__name__, self.id, d)
 
     def delete(self):
         """ delete object
